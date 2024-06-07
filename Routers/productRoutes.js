@@ -8,7 +8,7 @@ const {
   editProduct,
   createProduct,
   uploadProductImage,
-  searchByCategory,
+  searchProducts,
   getProductById
 } = require('../Controllers/productController');
 
@@ -17,7 +17,7 @@ const router = express.Router();
 router.route("/").get(getAllProducts).post(authenticateToken, createProduct);
 router.route("/:id").put(authenticateToken, editProduct).delete(authenticateToken, deleteProduct).get(getProductById);
 router.post("/upload", authenticateToken, uploadProductImage);
-router.route("/filter").get(authenticateToken,searchByCategory);
 router.get("/user", authenticateToken, getAllProductsOfUser);
+router.post("/search", authenticateToken, searchProducts);
 
 module.exports = router;

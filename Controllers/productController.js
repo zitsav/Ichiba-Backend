@@ -176,19 +176,53 @@ const uploadProductImage = asyncHandler(async (req, res) => {
   }
 });
 
-const searchByCategory = asyncHandler(async (req, res) => {
-  const { category } = req.query;
+const searchProducts = asyncHandler(async (req, res) => {
+  const { search, category, sortBy, order = 'asc' } = req.body;
+  
+  const searchFilters = [];
+  if (search) {
+    searchFilters.push({
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ],
+    });
+  }
 
-  if (!category) {
-    throw new BadRequestError("Category parameter is required");
+  if (category) {
+    searchFilters.push({
+      category: category.toUpperCase(),
+    });
+  }
+
+  const sortOptions = [];
+  if (sortBy === 'time') {
+    sortOptions.push({ createdAt: order });
+  } else if (sortBy === 'price') {
+    sortOptions.push({ price: order });
   }
 
   const products = await prisma.product.findMany({
-    where: { category },
-    orderBy: { createdAt: 'asc' }
+    where: {
+      AND: searchFilters.length > 0 ? searchFilters : undefined,
+    },
+    orderBy: sortOptions.length > 0 ? sortOptions : undefined,
+    include: {
+      images: true,
+      owner: true,
+    },
   });
 
-  res.status(StatusCodes.OK).json({ count: products.length, products });
+  const formattedProducts = products.map((product) => {
+    const { images, ...rest } = product;
+    const formattedImages = images.map((image) => ({
+      publicID: image.publicID,
+      url: image.url,
+    }));
+    return { ...rest, images: formattedImages };
+  });
+
+  res.status(StatusCodes.OK).json({ count: formattedProducts.length, products: formattedProducts });
 });
 
 module.exports = {
@@ -198,6 +232,6 @@ module.exports = {
   editProduct,
   createProduct,
   uploadProductImage,
-  searchByCategory,
+  searchProducts,
   getProductById
 };

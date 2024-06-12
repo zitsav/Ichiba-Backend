@@ -15,7 +15,7 @@ app.use(cors({origin: "http://localhost:5174", credentials: "true"}));
 
 app.use(express.json())
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.use('/api/v1/auth', authRoutes);
 app.use("/api/v1/user", userRoutes);

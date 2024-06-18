@@ -8,46 +8,30 @@ datasource db {
 }
 
 model User {
-  userId           Int             @id @default(autoincrement())
+  userId           Int       @id @default(autoincrement())
   name             String
-  enrollmentNumber String          @unique
-  isVerified       Boolean         @default(false)
+  enrollmentNumber String    @unique
+  isVerified       Boolean   @default(false)
   program          String
   batchYear        Int
   batch            String
   upiId            String?
   phoneNumber      String?
-  products         Product[]       @relation("ProductOwner")
-  profilePicture   ProfilePicture? @relation("UserProfilePicture")
+  products         Product[] @relation("ProductOwner")
+  profilePicture   String?
 }
 
 model Product {
-  productId    Int            @id @default(autoincrement())
+  productId    Int       @id @default(autoincrement())
   name         String
   description  String
-  owner        User           @relation("ProductOwner", fields: [ownerId], references: [userId])
+  owner        User      @relation("ProductOwner", fields: [ownerId], references: [userId])
   ownerId      Int
   category     Category
   price        Float
-  images       ProductImage[] @relation("ProductImages")
-  isSold       Boolean        @default(false)
-  createdAt    DateTime       @default(now())
-}
-
-model ProfilePicture {
-  id       Int    @id @default(autoincrement())
-  publicID String
-  url      String
-  user     User   @relation("UserProfilePicture", fields: [userId], references: [userId])
-  userId   Int    @unique
-}
-
-model ProductImage {
-  id        Int     @id @default(autoincrement())
-  publicID  String
-  url       String
-  product   Product @relation("ProductImages", fields: [productId], references: [productId])
-  productId Int
+  images       String[]
+  isSold       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
 }
 
 enum Category {

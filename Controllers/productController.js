@@ -1,35 +1,19 @@
 const { PrismaClient } = require('@prisma/client');
 const cloudinary = require("cloudinary").v2;
 const asyncHandler = require("express-async-handler");
-const fs = require("fs")
+const fs = require("fs");
 const { StatusCodes } = require("http-status-codes");
-const {
-  BadRequestError,
-  NotFoundError,
-  UnauthenticatedError,
-} = require("../errors");
+const { BadRequestError, NotFoundError, UnauthenticatedError } = require("../errors");
 
 const prisma = new PrismaClient();
 
 const getAllProducts = asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
     orderBy: { productId: 'asc' },
-    include: {
-      images: true,
-      owner: true,
-    },
+    include: { owner: true },
   });
 
-  const formattedProducts = products.map((product) => {
-    const { images, ...rest } = product;
-    const formattedImages = images.map((image) => ({
-      publicID: image.publicID,
-      url: image.url,
-    }));
-    return { ...rest, images: formattedImages };
-  });
-
-  res.status(StatusCodes.OK).json({ count: formattedProducts.length, products: formattedProducts });
+  res.status(StatusCodes.OK).json({ count: products.length, products });
 });
 
 const getProductById = asyncHandler(async (req, res) => {
@@ -37,7 +21,7 @@ const getProductById = asyncHandler(async (req, res) => {
 
   const product = await prisma.product.findUnique({
     where: { productId },
-    include: { images: true, owner: true }
+    include: { owner: true },
   });
 
   if (!product) {
@@ -45,14 +29,7 @@ const getProductById = asyncHandler(async (req, res) => {
     return;
   }
 
-  const { images, ...rest } = product;
-  const formattedImages = images.map((image) => ({
-    publicID: image.publicID,
-    url: image.url,
-  }));
-
-  const formattedProduct = { ...rest, images: formattedImages };
-  res.status(StatusCodes.OK).json(formattedProduct);
+  res.status(StatusCodes.OK).json(product);
 });
 
 const getAllProductsOfUser = asyncHandler(async (req, res) => {
@@ -60,25 +37,19 @@ const getAllProductsOfUser = asyncHandler(async (req, res) => {
 
   const products = await prisma.product.findMany({
     where: { ownerId: userId },
-    orderBy: { createdAt: 'asc' }
+    orderBy: { createdAt: 'asc' },
   });
 
   res.status(StatusCodes.OK).json({ count: products.length, products });
 });
 
-const createProduct = async (req, res, next) => {
+const createProduct = asyncHandler(async (req, res, next) => {
   try {
     const userId = req.user.userId;
 
     const productData = {
       ...req.body,
       owner: { connect: { userId } },
-      images: {
-        create: req.body.images.map(image => ({
-          publicID: image.publicID,
-          url: image.url,
-        })),
-      },
     };
 
     const product = await prisma.product.create({
@@ -89,7 +60,7 @@ const createProduct = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+});
 
 const deleteProduct = asyncHandler(async (req, res, next) => {
   try {
@@ -102,10 +73,6 @@ const deleteProduct = asyncHandler(async (req, res, next) => {
     if (!product) {
       throw new NotFoundError('Product not found');
     }
-
-    await prisma.productImage.deleteMany({
-      where: { productId },
-    });
 
     await prisma.product.delete({
       where: { productId },
@@ -125,7 +92,7 @@ const editProduct = asyncHandler(async (req, res) => {
 
     const product = await prisma.product.findUnique({
       where: { productId },
-      include: { owner: true }
+      include: { owner: true },
     });
 
     if (!product) {
@@ -138,7 +105,7 @@ const editProduct = asyncHandler(async (req, res) => {
 
     const updatedProduct = await prisma.product.update({
       where: { productId },
-      data: updatedData
+      data: updatedData,
     });
 
     res.status(StatusCodes.OK).json(updatedProduct);
@@ -158,13 +125,10 @@ const uploadProductImage = asyncHandler(async (req, res) => {
     const uploadPromises = imageFiles.map(async (file) => {
       const result = await cloudinary.uploader.upload(file.tempFilePath, {
         use_filename: true,
-        folder: 'sample-uploads'
+        folder: 'sample-uploads',
       });
       fs.unlinkSync(file.tempFilePath);
-      return {
-        publicID: result.public_id,
-        url: result.secure_url,
-      };
+      return result.secure_url;
     });
 
     const uploadedImages = await Promise.all(uploadPromises);
@@ -178,7 +142,7 @@ const uploadProductImage = asyncHandler(async (req, res) => {
 
 const searchProducts = asyncHandler(async (req, res) => {
   const { search, category, sortBy, order = 'asc' } = req.body;
-  
+
   const searchFilters = [];
   if (search) {
     searchFilters.push({
@@ -207,22 +171,10 @@ const searchProducts = asyncHandler(async (req, res) => {
       AND: searchFilters.length > 0 ? searchFilters : undefined,
     },
     orderBy: sortOptions.length > 0 ? sortOptions : undefined,
-    include: {
-      images: true,
-      owner: true,
-    },
+    include: { owner: true },
   });
 
-  const formattedProducts = products.map((product) => {
-    const { images, ...rest } = product;
-    const formattedImages = images.map((image) => ({
-      publicID: image.publicID,
-      url: image.url,
-    }));
-    return { ...rest, images: formattedImages };
-  });
-
-  res.status(StatusCodes.OK).json({ count: formattedProducts.length, products: formattedProducts });
+  res.status(StatusCodes.OK).json({ count: products.length, products });
 });
 
 module.exports = {
@@ -233,5 +185,5 @@ module.exports = {
   createProduct,
   uploadProductImage,
   searchProducts,
-  getProductById
+  getProductById,
 };

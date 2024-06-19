@@ -14,10 +14,10 @@ const {
 
 const router = express.Router();
 
+router.get("/user", authenticateToken, getAllProductsOfUser);
 router.route("/").get(getAllProducts).post(authenticateToken, createProduct);
 router.route("/:id").put(authenticateToken, editProduct).delete(authenticateToken, deleteProduct).get(getProductById);
 router.post("/upload", authenticateToken, uploadProductImage);
-router.get("/user", authenticateToken, getAllProductsOfUser);
 router.post("/search", authenticateToken, searchProducts);
 
 module.exports = router;

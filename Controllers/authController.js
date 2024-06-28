@@ -48,7 +48,6 @@ const loginStudent = asyncHandler(async (req, res) => {
           program,
           batchYear: admission_year,
           batch,
-          isVerified: false
         },
       });
 
@@ -72,51 +71,10 @@ const loginStudent = asyncHandler(async (req, res) => {
   }
 });
 
-const verifyStudent = asyncHandler(async (req, res) => {
-  try {
-    const { user } = req;
-    const userId = parseInt(req.params.id, 10);
-    const { phoneNumber, upiId } = req.body;
-
-    if (!user) {
-      throw new BadRequestError('Something went wrong');
-    }
-
-    const foundUser = await prisma.user.findUnique({
-      where: { userId },
-    });
-
-    if (!foundUser) {
-      throw new NotFoundError('User does not exist');
-    }
-
-    if (user.userId !== foundUser.userId) {
-      throw new UnauthenticatedError('User is not permitted to verify this profile');
-    }
-
-    if (!foundUser.isVerified) {
-      const updatedUser = await prisma.user.update({
-        where: { userId },
-        data: {
-          phoneNumber: phoneNumber || foundUser.phoneNumber,
-          upiId: upiId || foundUser.upiId,
-          isVerified: true,
-        },
-      });
-
-      res.status(StatusCodes.OK).json(updatedUser);
-    } else {
-      res.status(StatusCodes.OK).json({ message: 'User is already verified' });
-    }
-  } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error.message });
-  }
-});
-
 const generateToken = (userId, name) => {
   return jwt.sign({ userId, name }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
 
-module.exports = { loginStudent, verifyStudent };
+module.exports = { loginStudent };

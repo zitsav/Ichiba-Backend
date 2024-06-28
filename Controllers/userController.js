@@ -13,7 +13,7 @@ const updateUser = asyncHandler(async (req, res) => {
   try {
     const { user } = req;
     const userId = parseInt(req.params.id, 10);
-    const { phoneNumber, upiId } = req.body;
+    const { phoneNumber, upiId, profilePicture } = req.body;
 
     if (!user) {
       throw new BadRequestError('Something went wrong');
@@ -26,6 +26,7 @@ const updateUser = asyncHandler(async (req, res) => {
     const updatedData = {};
     if (phoneNumber) updatedData.phoneNumber = phoneNumber;
     if (upiId) updatedData.upiId = upiId;
+    if (profilePicture) updatedData.profilePicture = profilePicture
 
     const foundUser = await prisma.user.update({
       where: { userId: parseInt(userId) },
